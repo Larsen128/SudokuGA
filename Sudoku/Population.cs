@@ -121,7 +121,7 @@ namespace Sudoku
             }
             return grid;
         }
-
+         
         public int GetDiversityRate()
         {
             int diversityRate = new int();
