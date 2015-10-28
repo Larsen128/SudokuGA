@@ -119,7 +119,7 @@ namespace Sudoku
                     }
                 }
             }
-            return grid;
+            return grid; 
         }
          
         public int GetDiversityRate()
