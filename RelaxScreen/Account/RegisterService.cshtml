@@ -1,0 +1,113 @@
+﻿@* Supprimez cette section si vous utilisez le regroupement. *@
+@section Scripts {
+    <script src="~/Scripts/jquery.validate.min.js"></script>
+    <script src="~/Scripts/jquery.validate.unobtrusive.min.js"></script>
+}
+
+@{
+    Layout = "~/_SiteLayout.cshtml";
+    Page.Title = "S’inscrire";
+
+    string email = "";
+    string loginData = "";
+    string providerDisplayName = "";
+
+    var returnUrl = Request.QueryString["ReturnUrl"];
+    if (returnUrl.IsEmpty()) {
+        // Certains fournisseurs de connexions externes nécessitent toujours une valeur URL de retour.
+        returnUrl = Href("~/");
+    }
+
+    // Validation d’installation
+    Validation.RequireField("email", "Le champ de nom d’utilisateur est obligatoire.");
+
+    if (IsPost && Request.Form["newAccount"].AsBool()) {
+        // Formulaire de gestion d’inscription de nouveau compte
+        AntiForgery.Validate();
+        email = Request.Form["email"];
+        loginData = Request.Form["loginData"];
+
+        string provider = "";
+        string providerUserId = "";
+        if (WebSecurity.IsAuthenticated || !OAuthWebSecurity.TryDeserializeProviderUserId(loginData, out provider, out providerUserId)) {
+            Response.Redirect("~/Account/Manage");
+            return;
+        }
+
+        providerDisplayName = OAuthWebSecurity.GetOAuthClientData(provider).DisplayName;
+        if (Validation.IsValid()) {
+            // Insérer un nouvel utilisateur dans la base de données
+            var db = Database.Open("StarterSite");
+
+            // Vérifier si l’utilisateur n’existe pas déjà
+            var user = db.QuerySingle("SELECT Email FROM UserProfile WHERE LOWER(Email) = LOWER(@0)", email);
+            if (user == null) {
+                // Insérer l'adresse de messagerie dans la table de profils
+                db.Execute("INSERT INTO UserProfile (Email) VALUES (@0)", email);
+                OAuthWebSecurity.CreateOrUpdateAccount(provider, providerUserId, email);
+
+                OAuthWebSecurity.Login(provider, providerUserId, createPersistentCookie: false);
+
+                Context.RedirectLocal(returnUrl);
+                return;
+            } else {
+                ModelState.AddError("email", "L’utilisateur existe déjà. Veuillez entrer un autre nom d’utilisateur.");
+            }
+        }
+    } else {
+        // Gérer les rappels du fournisseur de connexions externes
+
+        var result = OAuthWebSecurity.VerifyAuthentication(Href("~/Account/RegisterService", new { returnUrl }));
+        if (result.IsSuccessful) {
+            bool registered = OAuthWebSecurity.Login(result.Provider, result.ProviderUserId, createPersistentCookie: false);
+            if (registered) {
+                Context.RedirectLocal(returnUrl);
+                return;
+            }
+
+            if (WebSecurity.IsAuthenticated) {
+                // Si l’utilisateur actuel est connecté, ajouter le nouveau compte.
+                OAuthWebSecurity.CreateOrUpdateAccount(result.Provider, result.ProviderUserId, WebSecurity.CurrentUserName);
+                Context.RedirectLocal(returnUrl);
+                return;
+            } else {
+                // Si l’utilisateur est nouveau, définir le nom d’utilisateur par défaut sur la valeur obtenue du fournisseur de connexions externes.
+                email = result.UserName;
+                loginData = OAuthWebSecurity.SerializeProviderUserId(result.Provider, result.ProviderUserId);
+                providerDisplayName = OAuthWebSecurity.GetOAuthClientData(result.Provider).DisplayName;
+            }
+        } else {
+            Response.Redirect("~/Account/ExternalLoginFailure");
+            return;
+        }
+    }
+}
+<hgroup class="title">
+    <h1>@Page.Title.</h1>
+    <h2>Associez votre compte @providerDisplayName.</h2>
+</hgroup>
+
+<form method="post">
+    @AntiForgery.GetHtml()
+    <input type="hidden" name="loginData" value="@loginData" />
+    @* S’il existe au moins une erreur de validation, en avertir l’utilisateur. *@
+    @Html.ValidationSummary(excludeFieldErrors: true)
+
+    <fieldset>
+        <legend>Formulaire d’inscription</legend>
+        <p>
+            Vous vous êtes authentifié avec succès avec <strong>@providerDisplayName</strong>. Veuillez
+            entrer un nom d’utilisateur pour ce site ci-dessous, puis cliquez sur le bouton Confirmer pour terminer la
+            connexion.
+        </p>
+        <ol>
+            <li class="email">
+                <label for="email" @if (!ModelState.IsValidField("email")) {<text>class="error-label"</text>}>Adresse de messagerie</label>
+                <input type="text" id="email" name="email" value="@email" @Validation.For("email") />
+                @* Écrire les erreurs de validation de la messagerie électronique sur la page *@
+                @Html.ValidationMessage("email")
+            </li>
+        </ol>
+        <button type="submit" name="newAccount" value="true">S’inscrire</button>
+    </fieldset>
+</form>

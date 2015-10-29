@@ -1,0 +1,28 @@
+﻿@{
+    WebSecurity.InitializeDatabaseConnection("StarterSite", "UserProfile", "UserId", "Email", autoCreateTables: true);
+
+    // Pour permettre aux utilisateurs de ce site de se connecter à l’aide de leur compte à partir d’autres sites tels que Microsoft, Facebook et Twitter,
+    // vous devez mettre à jour ce site. Pour plus d’informations, consultez la page http://go.microsoft.com/fwlink/?LinkID=226949
+
+    //OAuthWebSecurity.RegisterMicrosoftClient(
+    //    clientId: "",
+    //    clientSecret: "");
+
+    //OAuthWebSecurity.RegisterTwitterClient(
+    //    consumerKey: "",
+    //    consumerSecret: "");
+
+    //OAuthWebSecurity.RegisterFacebookClient(
+    //    appId: "",
+    //    appSecret: "");
+
+    //OAuthWebSecurity.RegisterGoogleClient();
+
+    //WebMail.SmtpServer = "mailserver.example.com";
+    //WebMail.EnableSsl = true;
+    //WebMail.UserName = "username@example.com";
+    //WebMail.Password = "your-password";
+    //WebMail.From = "your-name-here@example.com";
+
+    // Pour apprendre à optimiser les scripts et les feuilles de style de votre site, rendez-vous sur la page http://go.microsoft.com/fwlink/?LinkID=248973
+}

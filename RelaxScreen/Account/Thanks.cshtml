@@ -1,0 +1,25 @@
+﻿@{
+    // Définir la page de disposition et la page de titre
+    Layout = "~/_SiteLayout.cshtml";
+    Page.Title = "Merci de vous être inscrit";
+}
+
+@if (!WebSecurity.IsAuthenticated) {
+    <hgroup class="title">
+        <h1>@Page.Title.</h1>
+        <h2>Vous n'avez pas encore terminé !</h2>
+    </hgroup>
+
+    <p>
+       Un message contenant les instructions d'activation de votre compte est en cours d'envoi vers votre boîte de réception.
+    </p>
+} else {
+    <hgroup class="title">
+        <h1>@Page.Title.</h1>
+        <h2>Vous êtes prêt.</h2>
+    </hgroup>
+
+    <p>
+        Il semblerait que vous avez déjà confirmé votre compte. Vous êtes donc prêt.
+    </p>
+}
