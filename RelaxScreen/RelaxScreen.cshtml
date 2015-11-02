@@ -1,0 +1,165 @@
+﻿@{
+    Layout = "~/_SiteLayout.cshtml";
+    Page.Title = "Relax Screen";
+}
+
+<div class="col-md-4">
+    <svg id="circle-svg" height="500" width="300"></svg>
+</div>
+<div class="col-md-4">
+    <hgroup>
+        <h3>Indicateurs</h3>
+    </hgroup>
+    <table id="indicators"></table>
+</div>
+<div class="col-md-4">
+    <hgroup>
+        <h3>Réglages</h3>
+    </hgroup>
+    <table>
+        <tr>
+            <td>Speed Constant</td>
+            <td>
+                <input id="speedConstInput" type="range" min="1" max="25" value="3" />
+            </td>
+        </tr>
+        <tr>
+            <td>Colour Path</td>
+            <td>
+                <span><input type="radio" name="colorPathLine" value="green" /> Green</span>
+                <span><input type="radio" checked name="colorPathLine" value="red" /> Red</span>
+                <span><input type="radio" name="colorPathLine" value="blue" /> Blye</span>
+                <span><input type="radio" name="colorPathLine" value="yellow" /> Yellow</span>
+
+            </td>
+        </tr>
+        <tr>
+            <td>Thick Path</td>
+            <td>
+                <input id="thickPath" type="range" min="1" max="10" value="1" />
+            </td>
+        </tr>
+    </table>
+</div>
+
+@section featured{
+    <h3>
+        Ceci est un gros test
+    </h3>
+}
+
+
+@section Scripts{
+    <script>
+        var lastPosition;
+
+        $(document).ready(function () {
+            drawCircle("circle-svg", "my-circle", 250, 150, 10, "red", "black", "3");
+            lastPosition = { cx: 250, cy: 150, speed: { x: 0, y: 0 } };
+            setInterval(moveRandElement, 100, "circle-svg", "my-circle");
+
+        });
+
+        function drawCircle(svgId, circleId, cx, cy, r, fillColor, strokeColor, strokeWidth) {
+
+            var svgns = "http://www.w3.org/2000/svg";
+            var shape = document.createElementNS(svgns, "circle");
+            shape.setAttributeNS(null, "cx", cx);
+            shape.setAttributeNS(null, "cy", cy);
+            shape.setAttributeNS(null, "r", r);
+            shape.setAttributeNS(null, "fill", fillColor);
+            shape.setAttributeNS(null, "stroke", strokeColor);
+            shape.setAttributeNS(null, "stroke-width", strokeWidth);
+            shape.id = circleId;
+            document.getElementById(svgId).appendChild(shape);
+        }
+
+        function drawLine(svgId, lineId, x1, x2, y1, y2, strokeColor, strokeWidth) {
+            var svgns = "http://www.w3.org/2000/svg";
+            var shape = document.createElementNS(svgns, "line");
+            shape.setAttributeNS(null, "x1", x1);
+            shape.setAttributeNS(null, "y1", y1);
+            shape.setAttributeNS(null, "x2", x2);
+            shape.setAttributeNS(null, "y2", y2);
+            shape.setAttributeNS(null, "stroke", strokeColor);
+            shape.setAttributeNS(null, "stroke-width", strokeWidth);
+            shape.id = lineId;
+            document.getElementById(svgId).appendChild(shape);
+        }
+
+        function centerCircle(svgId, circleId) {
+            var svg = document.getElementById(svgId);
+            var circle = svg.getElementById(circleId);
+            circle.setAttributeNS(null, "cx", svg.width.animVal.value / 2);
+            circle.setAttributeNS(null, "cy", svg.height.animVal.value / 2);
+        }
+
+        function moveRandElement(svgId, elementId) {
+
+            var svg = document.getElementById(svgId);
+            var circle = svg.getElementById(elementId);
+
+            var speedConst = $("#speedConstInput").val();
+
+            var cxCurrent = parseFloat(circle.getAttributeNS(null, "cx"));
+            var cyCurrent = parseFloat(circle.getAttributeNS(null, "cy"));
+            var rCurrent = parseFloat(circle.getAttributeNS(null, "r"));
+
+            var speedRatio = Math.sqrt(Math.pow(lastPosition.speed.x, 2) + Math.pow(lastPosition.speed.y, 2));
+            speedRatio = speedRatio == 0 ? 1 : speedRatio;
+
+            var cxRand = cxCurrent + ((Math.random() - 0.5) + (lastPosition.speed.x / speedRatio)) * speedConst;
+            var cyRand = cyCurrent + ((Math.random() - 0.5) + (lastPosition.speed.y / speedRatio)) * speedConst;
+
+            if (cxRand + rCurrent > svg.width.animVal.value ||
+                cxRand - rCurrent < 0 ||
+                cyRand + rCurrent > svg.height.animVal.value ||
+                cyRand - rCurrent < 0) {
+
+
+
+                centerCircle(svgId, elementId);
+
+                lastPosition = { cx: 0, cy: 0, speed: { x: 0, y: 0 } };
+                cxRand = svg.width.animVal.value / 2;
+                cyRand = svg.height.animVal.value / 2;
+            }
+            else {
+                circle.setAttributeNS(null, "cx", cxRand);
+                circle.setAttributeNS(null, "cy", cyRand);
+                
+                drawLine(svgId, "", lastPosition.cx, cxRand, lastPosition.cy, cyRand, $("input[name=colorPathLine]:checked").val(), $("#thickPath").val());
+            }
+            
+            lastPosition.speed.x = cxRand - cxCurrent;
+            lastPosition.speed.y = cyRand - cyCurrent;
+            lastPosition.cx = cxRand;
+            lastPosition.cy = cyRand;
+
+            printDatas(
+                [{ name: "x", value: lastPosition.cx },
+                { name: "y", value: lastPosition.cy },
+                { name: "speedX", value: lastPosition.speed.x },
+                { name: "speedY", value: lastPosition.speed.y }])
+
+        }
+
+        function printDatas(datas) {
+            var container = $("#indicators");
+
+            for (var i = 0; i < datas.length; i++) {
+                if (container.has("#" + datas[i].name + "-name").length != 0) {
+                    container.find("#" + datas[i].name + "-value").text(datas[i].value);
+                }
+                else {
+                    container.append("<tr>"
+                        + "<td id='" + datas[i].name + "-name' " + ">" + datas[i].name + "</td>"
+                        + "<td id='" + datas[i].name + "-value' " + ">" + datas[i].value + "</td>"
+                        + "</tr>");
+                }
+            }
+        }
+
+    </script>
+
+}
